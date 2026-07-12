@@ -1,0 +1,8 @@
+nkits/
+CLAUDE.md
+
+# Build output
+nkit2iso
+nkit2iso.exe
+dist/
+.DS_Store
