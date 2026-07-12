@@ -29,7 +29,7 @@ CRC32 099E2C6D  MATCH (redump-verified)
 ## Install
 
 Download the archive for your platform from the
-[Releases](https://github.com/DonMikone/NKIT-Converter/releases) page and unpack
+[Releases](https://github.com/DonMikone/nkit2iso/releases) page and unpack
 the `nkit2iso` binary somewhere on your `PATH`.
 
 | Platform | Asset |
@@ -123,8 +123,8 @@ is used — still zero external dependencies.
 Requires Go 1.24+.
 
 ```sh
-git clone https://github.com/DonMikone/NKIT-Converter
-cd NKIT-Converter
+git clone https://github.com/DonMikone/nkit2iso
+cd nkit2iso
 go build -o nkit2iso .
 go test ./...     # junk-PRNG, Wii common-key and hash-tree self-checks
 ```
