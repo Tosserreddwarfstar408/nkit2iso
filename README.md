@@ -1,7 +1,8 @@
 # nkit2iso
 
-Convert **GameCube and Wii** `*.nkit.iso` disc images back to plain, bit-exact
-`.iso` files that emulators (Dolphin, Nintendont, …) can boot.
+Convert **GameCube and Wii** `*.nkit.iso` (and GCZ-compressed `*.nkit.gcz`)
+disc images back to plain, bit-exact `.iso` files that emulators (Dolphin,
+Nintendont, …) can boot.
 
 `nkit2iso` is a single, dependency-free static binary written in Go. It restores
 the shrunk NKit v01 format by replaying the preserved data and regenerating the
@@ -17,7 +18,9 @@ CRC32 099E2C6D  MATCH (redump-verified)
 ```
 
 > **GameCube and Wii are both supported and byte-exact** (GameCube and Wii
-> single/multi-partition discs, including scrubbed dumps). The one case that
+> single/multi-partition discs, including scrubbed dumps). Input may be a plain
+> `.nkit.iso` or a GCZ-compressed `.nkit.gcz`, which is transparently
+> decompressed. The one case that
 > can't be restored from the `.nkit.iso` alone is a Wii image whose **update
 > partition was removed** — that data isn't in the file and needs an external
 > Redump recovery partition, so it's detected and reported. See
@@ -69,6 +72,9 @@ nkit2iso -i game.nkit.iso
 
 # Positional input
 nkit2iso game.nkit.iso
+
+# GCZ-compressed input (decompressed on the fly)
+nkit2iso game.nkit.gcz          # -> game.iso
 ```
 
 The exit code is `0` only when the reconstructed ISO's CRC32 matches the value
@@ -76,6 +82,11 @@ stored in the NKit header. Any mismatch or error exits non-zero and the
 half-written output is removed.
 
 ## How it works
+
+If the input is a `.gcz` container (Dolphin's block-compressed format, as
+produced by `*.nkit.gcz`), `nkit2iso` first inflates it on the fly with the
+standard-library zlib — one block at a time, constant memory — and feeds the
+resulting nkit stream straight into the restore below.
 
 An NKit v01 GameCube image is a normal disc image with all reproducible data
 removed to shrink it:

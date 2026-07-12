@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"hash/crc32"
@@ -62,11 +63,28 @@ func run(input, output string) error {
 		return err
 	}
 
-	// Detect GameCube vs Wii by disc magic without disturbing the read offset.
+	// A GCZ container (e.g. *.nkit.gcz) holds the nkit stream zlib-compressed;
+	// transparently inflate it so the restore sees a plain nkit byte stream.
+	var src io.Reader = inf
+	srcLen := st.Size()
 	var magic [0x20]byte
-	if _, err := inf.ReadAt(magic[:], 0); err != nil {
+	if isGCZ(inf) {
+		gr, dsize, err := newGCZReader(inf)
+		if err != nil {
+			return err
+		}
+		br := bufio.NewReaderSize(gr, 1<<20)
+		m, err := br.Peek(len(magic))
+		if err != nil {
+			return err
+		}
+		copy(magic[:], m)
+		src, srcLen = br, dsize
+	} else if _, err := inf.ReadAt(magic[:], 0); err != nil {
 		return err
 	}
+
+	// Detect GameCube vs Wii by disc magic.
 	isWii := be32(magic[:], 0x18) == 0x5D1C9EA3
 
 	outf, err := os.Create(output)
@@ -79,7 +97,7 @@ func run(input, output string) error {
 	if isWii {
 		restoreFn = restoreWii
 	}
-	nkitCrc, err := restoreFn(inf, outf, st.Size(), progressBar())
+	nkitCrc, err := restoreFn(src, outf, srcLen, progressBar())
 	fmt.Fprintln(os.Stderr) // finish the progress line
 	if err != nil {
 		outf.Close()
@@ -103,8 +121,11 @@ func run(input, output string) error {
 // defaultOutput turns "foo.nkit.iso" into "foo.iso" (and anything else into
 // base + ".iso").
 func defaultOutput(input string) string {
-	if strings.HasSuffix(strings.ToLower(input), ".nkit.iso") {
-		return input[:len(input)-len(".nkit.iso")] + ".iso"
+	low := strings.ToLower(input)
+	for _, suf := range []string{".nkit.iso", ".nkit.gcz", ".gcz"} {
+		if strings.HasSuffix(low, suf) {
+			return input[:len(input)-len(suf)] + ".iso"
+		}
 	}
 	if i := strings.LastIndexByte(input, '.'); i > strings.LastIndexByte(input, '/') {
 		return input[:i] + ".iso"
